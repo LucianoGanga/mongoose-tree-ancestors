@@ -1,6 +1,6 @@
 {
   "name": "mongoose-tree-ancestors",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Mongoose Tree Structure with an Array of Ancestors plugin for mongoose",
   "main": "index.js",
   "repository": {
@@ -16,10 +16,12 @@
     "model-tree-structures-with-ancestors-array"
   ],
   "author": "Luciano Andrés Ganga Carabante",
-  "licenses": [{
-    "type": "MIT",
-    "url": "https://github.com/LucianoGanga/mongoose-tree-ancestors/blob/master/LICENSE-MIT"
-  }],
+  "licenses": [
+    {
+      "type": "MIT",
+      "url": "https://github.com/LucianoGanga/mongoose-tree-ancestors/blob/master/LICENSE-MIT"
+    }
+  ],
   "bugs": {
     "url": "https://github.com/LucianoGanga/mongoose-tree-ancestors/issues"
   },
