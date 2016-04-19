@@ -33,7 +33,7 @@ Just include the call to this module in the same place you declare your Mongoose
 'use strict';
 
 const mongoose = require('mongoose');
-const mongooseTreeAncestors = utils.mongooseTreeAncestors;
+const mongooseTreeAncestors = require('mongoose-tree-ancestors');
 
 // Declare a Model name
 const modelName = 'product_category';

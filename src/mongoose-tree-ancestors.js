@@ -11,7 +11,6 @@
 const mongoose = require('mongoose');
 const async = require('async');
 const _ = require('lodash');
-_.concat = require('lodash.concat');
 
 /**
  * Mongoose Tree Sructure with an Array of Ancestors path plugin
@@ -164,7 +163,7 @@ function treeAncestors(schema, options) {
 	 * var document = model.findOne({[params]})
 	 * document.remove()
 	 */
-	schema.pre('remove', function(doc, next) {
+	schema.pre('remove', function(doc) {
 		this.constructor.findOne({
 			_id: this._id
 		}).exec(function(err, data) {
@@ -344,34 +343,6 @@ function objProperty(property, value, obj) {
 	obj = obj || {};
 	obj[property] = value;
 	return obj;
-}
-
-/**
- * Query for process paramters and mongodb query options
- */
-function Query(args) {
-	this.callback = null;
-	this.query = {};
-
-	if (args.length === 1 && typeof args[0] === 'function') {
-		this.callback = args[0];
-	} else if (args.length === 1) {
-		this.query = args[0] || {};
-	} else if (args.length > 1) {
-		if (args[args.length - 1] && typeof args[args.length - 1] === 'function') {
-			this.callback = args[args.length - 1];
-			this.query = args[args.length - 2];
-		} else {
-			this.query = args[args.length - 1];
-		}
-	}
-	this.condition = this.query.condition || {};
-	this.fields = this.query.fields || null;
-	this.sort = this.query.sort || {};
-	this.limit = this.query.limit || 0;
-	this.skip = this.query.skip || 0;
-	this.id = this.query.id || null;
-	console.dir(this);
 }
 
 module.exports = treeAncestors;
