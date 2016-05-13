@@ -96,3 +96,4 @@ yourModel.buildAncestors();
 * Method isDescendant
 * Method isSibling
 * Method getFullTree
+Probably https://github.com/substack/js-traverse is a good option to make all this happen
