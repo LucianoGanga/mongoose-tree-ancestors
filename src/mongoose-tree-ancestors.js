@@ -318,23 +318,28 @@ function treeAncestors(schema, options) {
 
 	function _deleteDocument(doc, next) {
 		// Check if there are childrens depending on the document that will be removed
-		doc.constructor.find({
-			ancestors: doc._id
-		}).exec(function(e, data) {
-			if (e) {
-				return next(e);
-			}
-			// If there are no childrens depending on it, proceed with the document removal
-			if (!data.length) {
-				next();
-			}
-			// If the document has childrens depending on it, don't allow the removal
-			else {
-				let err = new Error('It\'s not possible to delete this document with id "' + doc._id + '". It has ' + data.length + ' childrens depending on it');
-				err.childrens = _.map(data, '_id');
-				next(err);
-			}
-		});
+		if (doc) {
+			doc.constructor.find({
+				ancestors: doc._id
+			}).exec(function(e, data) {
+				if (e) {
+					return next(e);
+				}
+				// If there are no childrens depending on it, proceed with the document removal
+				if (!data.length) {
+					next();
+				}
+				// If the document has childrens depending on it, don't allow the removal
+				else {
+					let err = new Error('It\'s not possible to delete this document with id "' + doc._id + '". It has ' + data.length + ' childrens depending on it');
+					err.childrens = _.map(data, '_id');
+					next(err);
+				}
+			});
+		} else {
+			next();
+		}
+
 	}
 
 }
