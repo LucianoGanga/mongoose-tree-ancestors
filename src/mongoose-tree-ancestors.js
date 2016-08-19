@@ -297,6 +297,7 @@ function treeAncestors(schema, options) {
 		// Save data and update childrens
 		if (!doc[parentId]) {
 			doc[ancestors] = [];
+			doc.save();
 			// Update childrens
 			updateChilds();
 		} else {
