@@ -30,8 +30,8 @@
     "mongoose": "^4.3.5"
   },
   "dependencies": {
-    "async": "0.9.0",
-    "lodash": "4.11.1"
+    "async": "2.6.1",
+    "lodash": "4.17.10"
   },
   "maintainers": [
     "lucho_1312 <lucho_1312@hotmail.com>"
