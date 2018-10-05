@@ -9,14 +9,19 @@
  */
 
 const mongoose = require('mongoose');
-const async = require('async');
-const _ = require('lodash');
+const eachSeries = require('async/eachSeries');
+const mapLimit = require('async/mapLimit');
+const map = require('async/map');
+const _assign = require('lodash/assign');
+const _dropWhile = require('lodash/dropWhile');
+const _concat = require('lodash/concat');
+const _map = require('lodash/map');
 
 /**
  * Mongoose Tree Sructure with an Array of Ancestors path plugin
  */
 function treeAncestors(schema, options) {
-  options = _.assign(
+  options = _assign(
     {
       // Parent field defaults
       parentFieldName: 'parent',
@@ -41,9 +46,9 @@ function treeAncestors(schema, options) {
   let ancestors = options.ancestorsFieldName;
 
   function byId(value) {
-    let cond = {};
-    cond[options.parentIdFieldName] = value;
-    return cond;
+    let conditions = {};
+    conditions[options.parentIdFieldName] = value;
+    return conditions;
   }
 
   // Add parent field
@@ -90,25 +95,12 @@ function treeAncestors(schema, options) {
      * A find with filter {} here will find all the elements affected by the update
      */
     this.find({}).exec(function(err, data) {
-      // Iterate over the found elements updating it's childrens
-      async.eachSeries(
-        data,
-        function(doc, cb) {
-          _updatedDocument(doc, cb);
-        },
-        function(err) {
-          if (err) {
-            return done(err);
-          }
-          done();
-        }
-      );
+      // Iterate over the found elements updating it's children
+      eachSeries(data, _updatedDocument, done);
     });
   });
 
-  schema.post('findOneAndUpdate', function(doc, done) {
-    _updatedDocument(doc, done);
-  });
+  schema.post('findOneAndUpdate', _updatedDocument);
 
   schema.pre('save', function(next) {
     let self = this;
@@ -136,7 +128,7 @@ function treeAncestors(schema, options) {
      * 	If a new element is created, it must save the array with all the ancestors
      * 	
      * 	If an existing element is updated, and there're changes in it's parents,
-     *  the element must update it's ancestors and all the childrens should do the same
+     *  the element must update it's ancestors and all the children should do the same
      */
     if ((self.isNew && self[parentId]) || (!self.isNew && isParentIdChange)) {
       return _updatedDocument(self, next);
@@ -158,7 +150,7 @@ function treeAncestors(schema, options) {
         return next(err);
       }
       // Try to remove the document
-      _deleteDocument(documentToBeRemoved, next);
+      return _deleteDocument(documentToBeRemoved, next);
     });
   });
 
@@ -192,7 +184,7 @@ function treeAncestors(schema, options) {
     if (typeof callback === 'function') promise.addBack(callback);
 
     self.find(conditions).exec(function(err, docs) {
-      async.mapLimit(
+      mapLimit(
         docs,
         options.mapLimit,
         function(doc, cbNext) {
@@ -200,7 +192,7 @@ function treeAncestors(schema, options) {
         },
         function(err) {
           if (err) return promise.error(err);
-          promise.complete();
+          return promise.complete();
         }
       );
     });
@@ -230,7 +222,7 @@ function treeAncestors(schema, options) {
     }
 
     let updateChildren = function(pDocs, cbFinish) {
-      async.mapLimit(
+      mapLimit(
         pDocs,
         options.mapLimit,
         function(parent, cbNext) {
@@ -249,25 +241,15 @@ function treeAncestors(schema, options) {
                 return cbNext(err);
               }
               // after updated
-              self.find(objProperty(parentId, parent._id)).exec(function(err, docs) {
+              return self.find(objProperty(parentId, parent._id)).exec(function(err, docs) {
                 if (docs.length === 0) return cbNext(null);
 
-                updateChildren(docs, function(err) {
-                  if (err) {
-                    return cbNext(err);
-                  }
-                  cbNext(null);
-                });
+                return updateChildren(docs, cbNext);
               });
             }
           );
         },
-        function(err) {
-          if (err) {
-            return cbFinish(err);
-          }
-          cbFinish(null);
-        }
+        cbFinish
       );
     };
 
@@ -291,17 +273,17 @@ function treeAncestors(schema, options) {
   });
 
   function _updatedDocument(doc, next) {
-    let updateChilds = function() {
+    let updateChild = function() {
       doc.constructor.find(objProperty(ancestors, doc[id])).exec(function(err, docs) {
         // update documents
-        async.map(
+        map(
           docs,
           function(childrenDoc, cbNext) {
             // Remove all the ancestors that now are not ancestors
-            let newAncestors = _.dropWhile(childrenDoc[ancestors], function(elementId) {
+            let newAncestors = _dropWhile(childrenDoc[ancestors], function(elementId) {
               return elementId.toString() !== doc[id].toString();
             });
-            childrenDoc[ancestors] = _.concat(doc[ancestors], newAncestors);
+            childrenDoc[ancestors] = _concat(doc[ancestors], newAncestors);
 
             childrenDoc.save(function(err, data) {
               cbNext(err, data);
@@ -314,12 +296,12 @@ function treeAncestors(schema, options) {
       });
     };
 
-    // Save data and update childrens
+    // Save data and update children
     if (!doc[parentId]) {
       doc[ancestors] = [];
       doc.save();
-      // Update childrens
-      updateChilds();
+      // Update children
+      updateChild();
     } else {
       doc.constructor.findOne(byId(doc[parentId])).exec(function(err, newParent) {
         if (err || !newParent) {
@@ -331,14 +313,14 @@ function treeAncestors(schema, options) {
         let ancestorsArray = (parentAncestors && parentAncestors.push(newParent._id) && parentAncestors) || [];
         doc[ancestors] = ancestorsArray;
         doc.save();
-        // update childs
-        updateChilds();
+        // update child
+        return updateChild();
       });
     }
   }
 
   function _deleteDocument(doc, next) {
-    // Check if there are childrens depending on the document that will be removed
+    // Check if there are children depending on the document that will be removed
     if (doc) {
       doc.constructor
         .find({
@@ -348,20 +330,20 @@ function treeAncestors(schema, options) {
           if (e) {
             return next(e);
           }
-          // If there are no childrens depending on it, proceed with the document removal
+          // If there are no children depending on it, proceed with the document removal
           if (!data.length) {
-            next();
+            return next();
           } else {
-            // If the document has childrens depending on it, don't allow the removal
+            // If the document has children depending on it, don't allow the removal
             let err = new Error(
               'It\'s not possible to delete this document with id "' +
                 doc._id +
                 '". It has ' +
                 data.length +
-                ' childrens depending on it'
+                ' children depending on it'
             );
-            err.childrens = _.map(data, '_id');
-            next(err);
+            err.children = _map(data, '_id');
+            return next(err);
           }
         });
     } else {
