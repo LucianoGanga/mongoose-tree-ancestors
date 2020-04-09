@@ -31,7 +31,7 @@
   },
   "dependencies": {
     "async": "2.6.1",
-    "lodash": "4.17.10"
+    "lodash": "^4.17.15"
   },
   "maintainers": [
     "lucho_1312 <lucho_1312@hotmail.com>"
