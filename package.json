@@ -1,6 +1,6 @@
 {
   "name": "mongoose-tree-ancestors",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Mongoose Tree Structure with an Array of Ancestors plugin for mongoose",
   "main": "index.js",
   "repository": {
