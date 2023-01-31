@@ -27,7 +27,7 @@
   },
   "homepage": "https://github.com/LucianoGanga/mongoose-tree-ancestors",
   "devDependencies": {
-    "mongoose": "^4.3.5"
+    "mongoose": "^5.13.15"
   },
   "dependencies": {
     "async": "2.6.1",
